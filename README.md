@@ -450,7 +450,7 @@ new_str[n + 1] = '\0';
 
 ##### What’s the main issue with the code snippet seen here? (Hint: gets() is a function that reads in user input and stores it in the array given in the argument.)
 
-![](https://pic.imgdb.cn/item/63c7e46bbe43e0d30ead1eec.jpg)
+![.](https://pic.imgdb.cn/item/63c7e46bbe43e0d30ead1eec.jpg)
 
 
 
@@ -472,11 +472,11 @@ gets 是个危险函数，他不会检查用户输入的长度。
 
 ##### Convert the following single-precision floating point numbers from binary to decimal or from decimal to binary. You may leave your answer as an expression.
 
-<img src="https://pic.imgdb.cn/item/63c7eddbbe43e0d30ebc4310.jpg" style="zoom:50%;" />
+![4.1](https://pic.imgdb.cn/item/63c7eddbbe43e0d30ebc4310.jpg)
 
 
 
-<img src="https://pic.imgdb.cn/item/63c7edecbe43e0d30ebc63d8.jpg" style="zoom:50%;" />
+![4.2](https://pic.imgdb.cn/item/63c7edecbe43e0d30ebc63d8.jpg)
 
 
 
