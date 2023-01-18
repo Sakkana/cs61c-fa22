@@ -271,7 +271,274 @@ d: 1 * 256 + 2 * 16 + 3 = 291
 >sw x8, 0(x3)
 
 不知道对不对。
+对了。
 
+
+
+### Discussion 3: Floating Point
+
+#### 1 Pre-Check
+
+##### Memory sectors are defined by the hardware, and cannot be altered.
+
+错误。
+
+硬件提供一个可以擦写的 DRAM 作为内存，对于 CPU 来说他只是一个 value = f(address) 或者 f(address) = value 的读写映射。
+
+内存中的地址分配，区域分配（stack, heap, free, garbage）等是由操作系统统一管理的，其每个块的解释是可变的。
+
+
+
+##### For large recursive functions, you should store your data on the heap over the stack.
+
+正确。
+
+大型的递归调用会将许多上下文（返回地址，函数参数，局部变量等）放置在栈上，大量的递归会引起堆栈溢出的问题。
+
+❌
+
+大然居然是错误。
+
+他说如果要不同的函数调用之间通信用堆比较好，但是如果递归函数使用堆很容易导致 malloc 大量内存和内存不足。
+
+
+
+##### The goals of floating point are to have a large range of values, a low amount of precision, and real arithmetic results.
+
+正确。
+
+浮点数的阶码 Exponent 可以在很大的范围内伸缩，扩大或者缩小尾数的增长步长，并且可以表示 +∞，-∞以及 NaN。
+
+他会尽最大可能保留精度，可以精确到小数点后很多位，但是不能完全准确表示一个数字。
+
+我也不知道为什么答案说这是正确的，浮点数不是存在精度问题吗，虽然可以精确逼近，但是不能完全一样？
+
+
+
+##### The distance between floating point numbers increases as the absolute value of the numbers increase.
+
+正确。
+
+> LSB: Least Significant Bit
+>
+> MSB: MOst Significant Bit
+
+浮点数的增长是阶码来决定。
+
+浮点数分为规格化数和非规格化数。
+
+非规格化数字可以表示很精细的粒度。
+
+尾数有 23 位数，每一位的权重是 [2<sup>-1</sup>, 2<sup>-22</sup>]。
+
+因此如果 E = 0，那么这个浮点数的增长步长为 2^-23。但是答案说这里是-22，先存疑。
+
+
+
+##### Floating Point addition is associative.
+
+没看懂。
+
+错误。浮点数加法不满足结合律。
+
+浮点数是近似某个数字，因为每个浮点数都有自己的 Exponent，他们的步长间隔是不一样的。
+
+
+
+#### 2 Memory Management
+
+C 语言内存分为两个 static 区域和两个 dynamic 区域。
+
+static: Stack, Heap
+
+dynamic: data, text
+
+
+
+##### For each part, choose one or more of the following memory segments where the data could be located: code, static, heap, stack.
+
+(a) Static variables -> data
+
+(b) Local variables -> stack
+
+(c) Global variables -> data
+
+(d) Constants -> data，答案上还有 stack 和 code
+
+像这种情况，y = 5 可以被直接编译进指令中，因此存放在 code 里面
+
+```c
+1 #define y 5
+2
+3 int plus_y(int x) {
+4 	x = x + y;
+5 	return x;
+6 }
+```
+
+
+
+而这种全局定义的常量会放在 static data 里面
+
+```c
+const int x = 1;
+```
+
+
+
+(e) Machine Instructions -> code
+
+(f) Result of Dynamic Memory Allocation(malloc or calloc) -> heap
+
+(g) String Literals -> data
+
+
+
+##### Write the code necessary to allocate memory on the heap in the following scenarios
+
+(a) An array arr of `k` integers
+
+```c
+int *arr = (int*)malloc(sizeof(int) * k);
+```
+
+
+
+(b) A string `str` containing `p` characters 
+
+```c
+char *str = (char*)malloc(sizeof(char) * (p + 1));	// 最后要放 \0
+```
+
+
+
+(c) An `n × m` matrix mat of integers initialized to zero.
+
+```c
+// 1
+int *matrix = (int*)malloc(sizeof(int) * n * m);
+for (int i = 0; i < m * n; ++ i) {
+    matrix[i] = 0;
+}
+
+// 2
+int *matrix = (int*)calloc(m, sizeof(int*));	// 先创建 m 个 row 指针
+for (int i = 0; i < m; ++ i) {
+    matrix[i] = (int*)calloc(n, sizeof(int));	// 每个 row 都创建一个长度为 n 的数组
+}
+```
+
+
+
+##### Compare the following two implementations of a function which duplicates a string. Is either one correct? Which one runs faster? 
+
+![](https://pic.imgdb.cn/item/63c7e3d3be43e0d30eabf52e.jpg)
+
+
+
+第一个没有进行初始化，因此最后一个字节不一定是 \0。
+
+修复：
+
+```c
+new_str[n + 1] = '\0';
+```
+
+第一个更快，因为 calloc 还要进行初始化为 0 的操作。第一个是 O(1)，只需要标记分配返回就可以了。第二个是 O(n)，他要遍历每一个元素去赋值为 0.
+
+
+
+##### What’s the main issue with the code snippet seen here? (Hint: gets() is a function that reads in user input and stores it in the array given in the argument.)
+
+![](https://pic.imgdb.cn/item/63c7e46bbe43e0d30ead1eec.jpg)
+
+
+
+gets 是个危险函数，他不会检查用户输入的长度。
+
+64 个字节大小的 buffer 只能写入 63 个字符，最后一个设置为 \0。
+
+如果用户的输入大于 63，会造成缓冲区溢出。
+
+而且不推荐在栈上面创建数组，一方面是可能引用已经无效的野指针，一方面是数组太长会导致后面栈溢出。
+
+
+
+> 3 是链表 跳过了
+
+
+
+#### 4 Floating Point
+
+##### Convert the following single-precision floating point numbers from binary to decimal or from decimal to binary. You may leave your answer as an expression.
+
+<img src="https://pic.imgdb.cn/item/63c7eddbbe43e0d30ebc4310.jpg" style="zoom:50%;" />
+
+
+
+<img src="https://pic.imgdb.cn/item/63c7edecbe43e0d30ebc63d8.jpg" style="zoom:50%;" />
+
+
+
+#### 5 More Floating Point Representation
+
+##### What is the next smallest number larger than 2 that can be represented completely?
+
+首先，尾数代表了小数点后的有效值。
+
+因此，这个数值必然是 1.M x 2<sup>E - 127</sup> 的形式。
+
+既然要接近 2，那么这个指数必然不能特别大，但是要大于 0，这样才会大于 1.M，更加接近2.
+
+假如指数是 0，那么正好就是 1.M。
+
+加入指数是 1，那么这个数字就是 1.M x 2 = 2.M + 0.M。
+
+这个应该就是最最近 2 的数字了。
+
+因此，只要找到最小的 M，就可以满足 2.M + M > 2 并且最接近 2。
+
+最小的 M 是取 23 位尾数的 LSB = 1，该位的权重是 2<sup>-23</sup>。
+
+因此最终答案是 2 + 2<sup>-23</sup> + 2<sup>-23</sup>= 2 + 2<sup>-22</sup>。
+
+
+
+##### What is the next smallest number larger than 4 that can be represented completely?
+
+>  同上，要找到一个数字小于 4，但是最接近 4。
+>
+> 1.M x 2<sup>2</sup> = 4 + 0.M x 4。这超出了 4，因此指数只能是 1。
+>
+> 因此，这个数字必然是 1.M x 2 的形式，也就是和上面一样，2.M + M。
+>
+> 这么一加起来必然是 3.X，这样子才能更加接近 4。
+>
+> 因此，我们选定了 E - 127 = 1，E = 128，剩下的就是在 M 上做功夫了。
+>
+> 直接取 M = 全 1。
+
+呃呃呃看错题目了，还是得求大于 4 的。
+
+1.M x 2<sup>2</sup> = 4 + 0.M x 4。这超出了 4，因此只要找个最小的 0.M，这样子 0.M x 4 就不会偏移太多。
+
+还是取 M = 2<sup>-23</sup>，最终的答案就是 4 + 2<sup>-23</sup> x 4 = 4 + 2<sup>-21</sup>。
+
+
+
+##### What is the largest odd number that we can represent? Hint: Try applying the step size technique covered in lecture?
+
+最大的奇数，就是最大的偶数 - 1.
+
+偶数，就是 2 的倍数。
+
+想要以步长为 2 增长，就需要 2<sup>-23</sup> x 2<sup>E - 127</sup> = 2，满足步长为 2，后面都是以 2 为步长增长了。
+
+因此，E - 150 = 1, E = 151。
+
+于是得到了该模式下的伸缩因子，也就是阶码。
+
+可以知道，最大的奇数便是 2<sup>24</sup> - 1。
 
 
 ### Lab
