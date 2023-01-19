@@ -1,5 +1,35 @@
 # CS61C 学习笔记
 
+### Note
+##### risc-v 跳转指令小结
+risc-v 真正的只有两条跳转指令
+```asm
+jal rd, offset -> (jal ra, offset) rd 默认是 ra，即返回地址
+jalr rd, offset(rs1)
+```
+jal x1, label 会做两个动作：将返回地址（RV32 下也就是下一条指令的地址，也就是 PC + 4 写入 x1（x1 就是 ra 寄存器），作为返回地址）\
+然后跳转到 label 所对应的地址，在实际指令中是用 PC + 一个 20 位立即数 offset，这个立即数要 x 2再做符号扩展\
+
+但是 offset 比较恶心，实际上可以使用 `jal rd, label` 直接跳到这个符号代表的地址，编译器会自动计算 offset
+
+jalr 也将返回地址写入 rd，然后间接寻址跳转到 rs1 + offset 地址处
+
+于是乎，为了便利等一系列原因诞生了一些 pesudo 指令，即伪指令。
+```asm
+jal offset
+  -> jal x1, offset
+jalr rs
+  -> jalr x1, 0(rs)
+j offset
+  -> jal x0, offset
+jr rs
+ -> jalr x0, 0(rs)
+ret
+  -> jalr, x0, 0(r1)
+```
+
+
+
 
 ## Discussion
 
