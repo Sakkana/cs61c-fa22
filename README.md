@@ -28,7 +28,77 @@ ret
   -> jalr, x0, 0(r1)
 ```
 
+##### Register Convention
+```c
+int Leaf (int g, int h, int i, int j)
+{
+  int f;
+  f = (g + h) – (i + j);
+  return f;
 
+}
+```
+> 
+Parameter variables g, h, i, and j in argument\
+registers a0, a1, a2, and a3, and f in s0\
+§ Assume need one temporary register s1
+
+这段函数调用应该如何翻译成 RV32 呢？
+```asm
+addi sp,sp,-8 # adjust stack for 2 items
+sw s1, 4(sp) # save s1 for use afterwards
+sw s0, 0(sp) # save s0 for use afterwards
+
+add s0,a0,a1 # f = g + h
+add s1,a2,a3 # s1 = i + j
+sub a0,s0,s1 # return value (g + h) – (i + j)
+
+lw s0, 0(sp) # restore register s0 for caller
+lw s1, 4(sp) # restore register s1 for caller
+addi sp,sp,8 # adjust stack to delete 2 items
+jr ra        # jump back to calling routine
+```
+
+如果函数嵌套怎么办呢？
+```c
+int sumSquare(int x, int y) {
+  return mult(x,x)+ y;
+}
+```
+函数调用顺序：main -> sumSquare -> mult\
+main 函数在 jump 之前将返回地址，也就是当前的 pc + 4 存到了 ra 寄存器中\
+将 x, y 的值存到了 a0, a1 中\
+但是 sumSquare 又想要调用 mult，这将会覆写 ra, s0, s1 的值\
+因此需要保存当前上下文。\
+我认为代码可以这样写：
+```
+push ra
+push a0
+push a1
+
+# a0 已经是 x 了
+mv a1, a0   # a0 = x, a1 = x
+jarl mult
+
+pop a1
+pop a0
+pop ra
+
+# 返回值 mult 已经存在 a0 里面了
+add a0, a0, a1  # return mult(x, x) + y
+jr ra
+```
+
+规约规定了两类寄存器：
+1. Preserved across function call
+sp, gp, tp,\
+“saved registers” s0- s11 (s0 is also fp)
+
+2. Not preserved across function call\
+Caller cannot rely on values being unchanged\
+Argument/return registers a0-a7,ra,\
+“temporary registers” t0-t6\
+也就是大老鼠 (RAT) 需要被 squash，被压扁，被压进栈里不乱跑，因此这类寄存器需要被 caller 保存。
 
 
 ## Discussion
