@@ -1,7 +1,7 @@
 .globl factorial
 
 .data
-n: .word 8
+n: .word 7
 
 .text
 # Don't worry about understanding the code in main
@@ -27,6 +27,29 @@ main:
 # The return value should be stored in a0
 factorial:
     # YOUR CODE HERE
+
+    # a0 存放要计算阶乘的数 -> 计数器
+    # 只能使用 a 和 t 寄存器
+
+    addi t2, x0, 1
+    beq a0, t2, finish
+
+    # 当前的值放到堆栈上
+    addi sp, sp, -8
+    sw ra, 4(sp)
+    sw a0, 0(sp)
+
+    addi a0, a0, -1
+
+    jal factorial
+
+
+finish:
+    # 返回后不断连乘
+    lw ra, 4(sp)
+    lw t1, 0(sp)
+    addi sp, sp, 8
+    mul a0, a0, t1
 
     # This is how you return from a function. You'll learn more about this later.
     # This should be the last line in your program.

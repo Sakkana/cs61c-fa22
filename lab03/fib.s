@@ -18,5 +18,6 @@ finish:
     addi a0, x0, 1 # argument to ecall to execute print integer
     addi a1, t0, 0 # argument to ecall, the value to be printed
     ecall # print integer ecall
+    
     addi a0, x0, 10 # argument to ecall to terminate
     ecall # terminate ecall
