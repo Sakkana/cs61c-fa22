@@ -6,6 +6,9 @@ int ll_has_cycle(node *head) {
    node *hare = head;                                                                 
    while (hare != NULL) {
        tortoise = tortoise->next;
+       if (hare->next == NULL || hare->next->next == NULL) {
+           return 0;
+       }
        hare = hare->next->next;
        if (tortoise == hare) {
            return 1;
